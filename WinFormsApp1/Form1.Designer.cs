@@ -34,7 +34,6 @@
             richTextBox_socket2 = new RichTextBox();
             button_send = new Button();
             button_endsend = new Button();
-            button_heavySIM = new Button();
             SuspendLayout();
             // 
             // label_socket1
@@ -91,21 +90,11 @@
             button_endsend.UseVisualStyleBackColor = true;
             button_endsend.Click += button_endsend_Click;
             // 
-            // button_heavySIM
-            // 
-            button_heavySIM.Location = new Point(152, 338);
-            button_heavySIM.Name = "button_heavySIM";
-            button_heavySIM.Size = new Size(75, 23);
-            button_heavySIM.TabIndex = 6;
-            button_heavySIM.Text = "end send";
-            button_heavySIM.UseVisualStyleBackColor = true;
-            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
-            Controls.Add(button_heavySIM);
             Controls.Add(button_endsend);
             Controls.Add(button_send);
             Controls.Add(richTextBox_socket2);
@@ -127,6 +116,5 @@
         private RichTextBox richTextBox_socket2;
         private Button button_send;
         private Button button_endsend;
-        private Button button_heavySIM;
     }
 }
