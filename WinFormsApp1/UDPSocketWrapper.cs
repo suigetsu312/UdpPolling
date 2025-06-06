@@ -55,7 +55,8 @@ public class UDPSocketWrapper : ISocket
                 IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
                 byte[] bytes = _client.Receive(ref remote);
                 RemoteEndPoint = remote;
-                packet = new SocketPacket(bytes, DateTime.UtcNow, remote);
+                packet = new SocketPacket(bytes, DateTime.UtcNow, SocketSourceType, remote);
+
                 OnDataReceived?.Invoke(this, packet);  // ⚠️ 主動發事件
                 return true;
             }

@@ -13,12 +13,19 @@ namespace WinFormsApp1
     public class SocketManager : IDisposable
     {
         private readonly ConcurrentDictionary<string, ISocket> _sockets = new();
+        private readonly List<ISocketManagerPlugin> _plugins = new();
         private readonly Channel<SocketPacket> _channel = Channel.CreateUnbounded<SocketPacket>();
         private CancellationTokenSource? _cts;
         private Task? _processingTask;
         private Task? _receivingTask;
 
         public event EventHandler<SocketPacket>? OnPacketProcessed;
+
+        public void AddPlugin(ISocketManagerPlugin plugin)
+        {
+            plugin.Attach(this);
+            _plugins.Add(plugin);
+        }
 
         // 註冊新的 Socket 並訂閱它的資料事件
         public bool RegisterSocket(string name, ISocket socket)
@@ -70,10 +77,11 @@ namespace WinFormsApp1
                     {
                         
                         _channel.Writer.TryWrite(packet);
-                        Debug.WriteLine("socket manager ReceiveLoop : " + Thread.CurrentThread.ManagedThreadId);
+                        //Debug.WriteLine("socket manager ReceiveLoop : " + Thread.CurrentThread.ManagedThreadId);
 
                     }
                 }
+                
                 await Task.Delay(10, ct); // 控制頻率，避免太密集
             }
         }

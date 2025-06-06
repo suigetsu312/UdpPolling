@@ -21,63 +21,30 @@ namespace WinFormsApp1
             manager = new SocketManager();
             var loggerEvent = (string s) =>
             {
-                Debug.WriteLine(s);
             };
             logPlugin = new LogPlugin(loggerEvent);
             // 註冊事件，收到封包時輸出內容
             manager.OnPacketProcessed += (s, packet) =>
             {
                 string text = Encoding.UTF8.GetString(packet.Bytes);
-                Console.WriteLine($"[{packet.SRC}] {packet.ReceivedTime:HH:mm:ss.fff} -> {text}");
+
             };
 
             // 建立兩個 UDP Socket（模擬兩個來源）
             var udp1 = new UDPSocketWrapper(new IPEndPoint(IPAddress.Loopback, 9000), SocketSourceType.GPS);
             var udp2 = new UDPSocketWrapper(new IPEndPoint(IPAddress.Loopback, 9001), SocketSourceType.IMU);
+            var gpsLogger = new ManagerLogPlugin("GPS", Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Log"), SocketSourceType.GPS);
+            var imuLogger = new ManagerLogPlugin("IMU", Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Log"), SocketSourceType.IMU);
+
             logPlugin.Attach(udp2);
             logPlugin.Attach(udp1);
-            udp1.OnDataReceived += (s, packet) =>
-            {
-                Debug.WriteLine("udp1 user define on receive " + Thread.CurrentThread.ManagedThreadId);
+            manager.AddPlugin(gpsLogger);
+            manager.AddPlugin(imuLogger);
 
-                // 跨執行緒操作 UI 要用 Invoke
-                if (richTextBox_socket1.InvokeRequired)
-                {
-                    richTextBox_socket1.Invoke(new Action(() =>
-                    {
-                        string text = Encoding.UTF8.GetString(packet.Bytes);
-                        richTextBox_socket1.Text = ($"[{packet.SRC}] {packet.ReceivedTime:HH:mm:ss.fff} -> {text}");
-                    }));
-                }
-                else
-                {
-                    string text = Encoding.UTF8.GetString(packet.Bytes);
-                    richTextBox_socket1.Text = ($"[{packet.SRC}] {packet.ReceivedTime:HH:mm:ss.fff} -> {text}");
-                }
-            };
-
-            udp2.OnDataReceived += (s, packet) =>
-            {
-                Debug.WriteLine("udp2 user define on receive " + Thread.CurrentThread.ManagedThreadId);
-
-                if (richTextBox_socket2.InvokeRequired)
-                {
-                    richTextBox_socket2.Invoke(new Action(() =>
-                    {
-                        string text = Encoding.UTF8.GetString(packet.Bytes);
-                        richTextBox_socket2.Text = ($"[{packet.SRC}] {packet.ReceivedTime:HH:mm:ss.fff} -> {text}");
-                    }));
-                }
-                else
-                {
-                    string text = Encoding.UTF8.GetString(packet.Bytes);
-                    richTextBox_socket2.Text = ($"[{packet.SRC}] {packet.ReceivedTime:HH:mm:ss.fff} -> {text}");
-                }
-            };
 
             // 加入並啟動 Socket
-            await manager.AddSocketAsync("UDP1", udp1);
-            await manager.AddSocketAsync("UDP2", udp2);
+            await manager.AddSocketAsync("GPS", udp1);
+            await manager.AddSocketAsync("IMU", udp2);
 
             // 啟動 SocketManager 的資料處理 Loop
             manager.Start();
@@ -95,7 +62,7 @@ namespace WinFormsApp1
 
                 while (!_sendCts.Token.IsCancellationRequested)
                 {
-                    var data = Encoding.UTF8.GetBytes($"Hello UDP1 {DateTime.Now:HH:mm:ss.fff}");
+                    var data = Encoding.UTF8.GetBytes($"GPS {DateTime.Now}");
                     await udpClient.SendAsync(data, data.Length, targetEP);
                     await Task.Delay(1000); // 1秒一次
                 }
@@ -108,7 +75,7 @@ namespace WinFormsApp1
 
                 while (!_sendCts.Token.IsCancellationRequested)
                 {
-                    var data = Encoding.UTF8.GetBytes($"Hello UDP2 {DateTime.Now:HH:mm:ss.fff}");
+                    var data = Encoding.UTF8.GetBytes($"IMU {DateTime.Now}");
                     await udpClient.SendAsync(data, data.Length, targetEP);
                     await Task.Delay(1200); // 1.2秒一次
                 }
@@ -120,17 +87,6 @@ namespace WinFormsApp1
             _sendCts.Cancel();
             _sendCts.Dispose();
         }
-
-
-        private async void MainForm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (manager != null)
-            {
-                await manager.StopAsync();
-                manager.Dispose();
-            }
-        }
-
         private void button_send_Click(object sender, EventArgs e)
         {
             StartSendingPackets();
